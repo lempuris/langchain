@@ -120,6 +120,10 @@ class LangChainTutorial:
         print("Agent solving: 'Calculate 15 * 8 + 12'")
         result = agent.run("Calculate 15 * 8 + 12")
         print(f"Agent Result: {result}")
+
+        print("Agent solving: 'Count words in this sentence'")
+        word_count = agent.run("Count words in this sentence")
+        print(f"Agent Result: {word_count}")
     
     def run_all_demos(self):
         """Run all demonstration examples"""
