@@ -161,7 +161,8 @@ class LangChainTutorial:
             qa_chain = RetrievalQA.from_chain_type(
                 llm=self.llm,
                 chain_type="stuff",
-                retriever=vectorstore.as_retriever()
+                retriever=vectorstore.as_retriever(),
+                verbose=False
             )
             
             # Test RAG
