@@ -5,12 +5,19 @@ This application showcases essential LangChain features for beginners.
 
 import os
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.schema import HumanMessage, SystemMessage
 from langchain.prompts import ChatPromptTemplate
-from langchain.chains import LLMChain
+from langchain.chains import LLMChain, RetrievalQA
 from langchain.agents import initialize_agent, AgentType, Tool
 from langchain.memory import ConversationBufferMemory
+try:
+    from langchain_community.vectorstores import Chroma
+    from langchain_community.document_loaders import TextLoader
+    from langchain_text_splitters import CharacterTextSplitter
+    CHROMA_AVAILABLE = True
+except ImportError:
+    CHROMA_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
@@ -125,20 +132,72 @@ class LangChainTutorial:
         word_count = agent.run("Count words in this sentence")
         print(f"Agent Result: {word_count}")
     
+    def demo_rag(self):
+        """Demo 5: RAG (Retrieval-Augmented Generation)"""
+        print("\n" + "="*50)
+        print("DEMO 5: RAG (Retrieval-Augmented Generation)")
+        print("="*50)
+        
+        if not CHROMA_AVAILABLE:
+            print("❌ ChromaDB not installed. To enable RAG demo:")
+            print("   Windows: python -m pip install chromadb")
+            print("   Or: py -m pip install chromadb")
+            print("   Then run: pip install langchain-text-splitters")
+            return
+        
+        try:
+            # Load and split documents
+            loader = TextLoader("sample_docs.txt")
+            documents = loader.load()
+            
+            text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+            texts = text_splitter.split_documents(documents)
+            
+            # Create embeddings and vector store
+            embeddings = OpenAIEmbeddings()
+            vectorstore = Chroma.from_documents(texts, embeddings)
+            
+            # Create RAG chain
+            qa_chain = RetrievalQA.from_chain_type(
+                llm=self.llm,
+                chain_type="stuff",
+                retriever=vectorstore.as_retriever()
+            )
+            
+            # Test RAG
+            query = "What are the key components of LangChain?"
+            print(f"Query: {query}")
+            result = qa_chain.run(query)
+            print(f"RAG Answer: {result}")
+            
+            query2 = "How does RAG work?"
+            print(f"\nQuery: {query2}")
+            result2 = qa_chain.run(query2)
+            print(f"RAG Answer: {result2}")
+            
+        except Exception as e:
+            print(f"❌ RAG Demo Error: {e}")
+            print("Make sure sample_docs.txt exists in the current directory")
+    
     def run_all_demos(self):
         """Run all demonstration examples"""
         print("🎓 Welcome to LangChain Beginner Tutorial!")
-        print("This tutorial covers 4 key LangChain concepts:")
+        print("This tutorial covers 5 key LangChain concepts:")
         print("1. Basic LLM Interaction")
         print("2. Prompt Templates")
         print("3. Conversation Memory")
         print("4. Tools and Agents")
+        print("5. RAG (Retrieval-Augmented Generation)")
         
         try:
             self.demo_basic_llm()
             self.demo_prompt_templates()
             self.demo_memory()
             self.demo_tools_and_agents()
+            if CHROMA_AVAILABLE:
+                self.demo_rag()
+            else:
+                print("\n⚠️  RAG demo skipped - ChromaDB not installed")
             
             print("\n" + "="*50)
             print("🎉 Tutorial Complete!")
@@ -147,6 +206,7 @@ class LangChainTutorial:
             print("• Prompt templates make interactions reusable")
             print("• Memory enables contextual conversations")
             print("• Agents can use tools to solve complex tasks")
+            print("• RAG combines LLMs with external knowledge")
             print("="*50)
             
         except Exception as e:
